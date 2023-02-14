@@ -6,23 +6,24 @@ import tifffile as tf
 import matplotlib.pyplot as plt
 from Create_filesystem_for_projections import get_fil_type, get_fil_num, move_xtekct_fil,adjust_xtekct_fil
 from mask_image import qplot
-main_dest = "D:\Mats_08\CT-scanns\groundTrouth_TwoPoreSystem"
+main_dest = "E:\Mats_08\CT-scanns\groundTrouth_TwoPoreSystem"
 
-source_dir = "D:\Mats_08\CT-scanns\groundTrouth_TwoPoreSystem\\raw_data\\"
-image_file_base = "KS20221003_MJHF_groundtruth"
+source_dir = f"{main_dest}\\raw_data"
 base_name = "KS20221003_MJHF_groundtruth_"
 total_number_of_images_used = 0
 
 
 
 
-#avoids 0 by making alle projections as far from 0 as possible
+
 def give_even_dist_angles_deg(N):
+    """
+
+    :param int N: number of images that is to be distributed
+    :return: and array of the average angular postions of the images
+    """
     wp = np.linspace(0, 360, N, endpoint=False, dtype=int)
-    if type(N) == int:
-        return wp
-    rot = (wp[0]-wp[1])/2
-    return wp+rot
+    return wp
 
 
 def give_sector_end_points(mid_angle, sec_angle):
@@ -35,6 +36,13 @@ def angle_to_proj(ang, N_images = 3142):
 
 
 def matrix_to_tiff(mat, num, end_dest):
+    """
+
+    :param mat: image matrix
+    :param num: image number
+    :param end_dest: the new created director
+    :return:
+    """
     path = os.path.join(end_dest, base_name+str(num).zfill(4)+".tif")
     tf.imwrite(path, mat)
 
@@ -144,8 +152,44 @@ def plot_covered_area(proj_angles, sector_ang):
 
 
 
-proj_angles = give_even_dist_angles_deg(35)
-sector_ang = 5
+# integrate over the images in sector batches
+if __name__ == "__main__":
+    number_of_sectors = 150
+    #getting basic informations
+    files = os.listdir(source_dir)
+    image_files = [i for i in files if get_fil_type(i) == 'tif']
+    number_of_images = len(image_files)
+
+    #fixing file system, and moving xteckfile
+    end_dest = os.path.join(main_dest, f"integrating_images__{number_of_sectors}_sectors")
+    create_dir(end_dest)
+    moved_xtekct_name = move_xtekct_fil(end_dest)
+    adjust_xtekct_fil(end_dest,moved_xtekct_name,number_of_sectors)
 
 
-plot_covered_area(proj_angles, sector_ang)
+    # creates the integrated images
+    arr_of_end_points = np.linspace(number_of_images,0,number_of_sectors,dtype=int, endpoint=False)[::-1]
+    in_sector = 0
+    dim_matrix = np.zeros(get_image_array(os.path.join(source_dir, image_files[0])).shape)
+    avg_matrix = dim_matrix
+    counter = np.zeros(number_of_sectors)
+
+    print(f"{number_of_images} images will be divided into {number_of_sectors} sectors the the last image number for each sector is then shown in this array: {arr_of_end_points}")
+    for i in range(number_of_images):
+        counter[in_sector]+=1
+        avg_matrix += get_image_array(os.path.join(source_dir, image_files[i-1]))
+        if arr_of_end_points[in_sector] == i+1:
+            avg_matrix /= counter[in_sector]
+            in_sector+=1
+            matrix_to_tiff(np.uint16(avg_matrix), in_sector, end_dest)
+            avg_matrix = dim_matrix
+    f = open(os.path.join(end_dest,"info.txt"), "w")
+    f.write(f"""The images is a result of adding up a discrete number of projections.\n For this case {number_of_images} images was divided into {number_of_sectors} sectors.\n The following array show how many images that was used per sector {counter} 
+    """)
+
+
+
+
+
+
+

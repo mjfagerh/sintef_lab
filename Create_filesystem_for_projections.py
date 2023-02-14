@@ -4,8 +4,8 @@ import numpy as np
 
 
 
-main_dest = "D:\Mats_08\CT-scanns\groundTrouth_TwoPoreSystem"
-source_dir = "D:\Mats_08\CT-scanns\groundTrouth_TwoPoreSystem\\raw_data\\"
+main_dest = "E:\Mats_08\CT-scanns\groundTrouth_TwoPoreSystem"
+source_dir = "E:\Mats_08\CT-scanns\groundTrouth_TwoPoreSystem\\raw_data\\"
 image_file_base = "KS20221003_MJHF_groundtruth"
 list_of_N_projections = [50,55,60,65,70,75,80,85,90,95,100,150,300, 600,1200,3142]
 
@@ -58,6 +58,11 @@ def get_filenames_of_equal_spaced_images(number_of_images):
 
 
 def move_xtekct_fil(dir_path):
+    """
+
+    :param dir_path: the path of the new folder
+    :return: None
+    """
     fil_type = 'xtekct'
     for fil in get_raw_files():
         if get_fil_type(fil) == fil_type:
@@ -79,6 +84,13 @@ def fix_image_num(dir_path):
 
 
 def adjust_xtekct_fil(dir_path, fil_name, projections):
+    """
+
+    :param dir_path: this is the path to the new folder
+    :param fil_name: this is the name of the xtec file that has been moved
+    :param projections: this is the number of projections that is in the new file
+    :return: none
+    """
     with open(dir_path+fil_name, mode='r') as fil:
         new_file = []
         list_lines = fil.read().split('\n')
@@ -113,4 +125,5 @@ def main():
     for N_to_move in list_of_N_projections:
         Create_filesystem_for_projections(N_to_move)
 
-main()
+if __name__=="__main__":
+    main()
